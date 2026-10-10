@@ -26,3 +26,18 @@ export function validateLogin(req: Request, _res: Response, next: NextFunction) 
   }
   next();
 }
+
+export function validateCreateTicket(req: Request, _res: Response, next: NextFunction) {
+  const { title, description, priority } = req.body ?? {};
+
+  if (typeof title !== 'string' || title.trim().length < 3 || title.length > 120) {
+    return next(new AppError(400, 'Title must be 3 to 120 characters'));
+  }
+  if (typeof description !== 'string' || description.trim().length < 10 || description.length > 2000) {
+    return next(new AppError(400, 'Description must be 10 to 2000 characters'));
+  }
+  if (priority !== undefined && !['low', 'medium', 'high'].includes(priority)) {
+    return next(new AppError(400, 'Invalid priority'));
+  }
+  next();
+}

@@ -3,14 +3,14 @@ import { Types } from 'mongoose';
 /* ------------------------------------------------------------------ */
 /* Domain constants: single source of truth                            */
 /* ------------------------------------------------------------------ */
-// `as const` gives us runtime arrays (Step 2 will pass them to Mongoose's
-// `enum` option) AND compile-time union types derived from the same list.
+// `as const` gives us runtime arrays (passed to Mongoose's `enum` option
+// and used for request validation) AND compile-time union types.
 export const USER_ROLES = ['customer', 'agent'] as const;
 export const TICKET_STATUSES = ['open', 'pending', 'closed'] as const;
 export const TICKET_PRIORITIES = ['low', 'medium', 'high'] as const;
 
-export type UserRole = (typeof USER_ROLES)[number];           // 'customer' | 'agent'
-export type TicketStatus = (typeof TICKET_STATUSES)[number];  // 'open' | 'pending' | 'closed'
+export type UserRole = (typeof USER_ROLES)[number];              // 'customer' | 'agent'
+export type TicketStatus = (typeof TICKET_STATUSES)[number];     // 'open' | 'pending' | 'closed'
 export type TicketPriority = (typeof TICKET_PRIORITIES)[number]; // 'low' | 'medium' | 'high'
 
 /* ------------------------------------------------------------------ */
@@ -20,7 +20,7 @@ export interface IUser {
   id?: string; // Mongoose virtual getter for _id (string form); not stored
   name: string;
   email: string;
-  password: string; // bcrypt hash; the schema will use select:false
+  password: string; // bcrypt hash; the schema uses select:false
   role: UserRole;
   createdAt: Date;
   updatedAt: Date;
@@ -62,10 +62,48 @@ export interface JWTPayload {
   role: UserRole;
 }
 
+/* ------------------------------------------------------------------ */
+/* API request bodies and responses                                    */
+/* ------------------------------------------------------------------ */
+// --- Auth ---
 export interface RegisterBody { name: string; email: string; password: string; }
 export interface LoginBody { email: string; password: string; }
 export interface UserDTO { id: string; name: string; email: string; role: UserRole; }
 export interface AuthResponse { token: string; user: UserDTO; }
+
+// --- Tickets ---
+export interface CreateTicketBody {
+  title: string;
+  description: string;
+  priority?: TicketPriority; // optional: falls back to the schema default
+}
+
+export interface UpdateTicketBody {
+  status?: TicketStatus;
+  priority?: TicketPriority;
+  assignedAgent?: string | null; // agent user id, or null to unassign
+}
+
+// Query-string values always arrive as strings, so page/limit are strings here
+export interface TicketQuery {
+  status?: TicketStatus;
+  priority?: TicketPriority;
+  page?: string;
+  limit?: string;
+}
+
+export interface TicketDTO {
+  id: string;
+  title: string;
+  description: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  customer: { id: string; name: string };
+  assignedAgent: { id: string; name: string } | null;
+  createdAt: string; // ISO string over the wire
+  updatedAt: string;
+}
+
 /* ------------------------------------------------------------------ */
 /* Socket.IO typed events                                              */
 /* ------------------------------------------------------------------ */
