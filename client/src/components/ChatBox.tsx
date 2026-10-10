@@ -2,10 +2,17 @@ import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTicketChat } from '../hooks/useTicketChat';
+import type { Ticket } from '../types';
 
-export default function ChatBox({ ticketId, closed }: { ticketId: string; closed: boolean }) {
+interface Props {
+  ticketId: string;
+  closed: boolean;
+  onTicketUpdated?: (ticket: Ticket) => void;
+}
+
+export default function ChatBox({ ticketId, closed, onTicketUpdated }: Props) {
   const { user } = useAuth();
-  const { messages, connected, error, sendMessage } = useTicketChat(ticketId);
+  const { messages, connected, error, sendMessage } = useTicketChat(ticketId, onTicketUpdated);
   const [text, setText] = useState('');
   const [sendError, setSendError] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);

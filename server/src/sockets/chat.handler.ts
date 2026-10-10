@@ -5,7 +5,8 @@ import { MessageDTO, SocketAck } from '../types';
 import { AppServer, AppSocket } from './socket.types';
 
 // Namespaced room name. NEVER join a raw client-supplied string as a room.
-const roomFor = (ticketId: string) => `ticket:${ticketId}`;
+// Exported so the REST controller can emit to the same room.
+export const roomFor = (ticketId: string) => `ticket:${ticketId}`;
 
 const reply = (ack: unknown, res: SocketAck) => {
   if (typeof ack === 'function') ack(res);

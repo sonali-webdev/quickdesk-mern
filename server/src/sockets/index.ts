@@ -5,11 +5,13 @@ import { User } from '../models/User';
 import { verifyToken } from '../utils/jwt';
 import { AppServer } from './socket.types';
 import { registerChatHandlers } from './chat.handler';
+import { setIO } from './io';
 
 export function initSocket(httpServer: HttpServer): AppServer {
   const io: AppServer = new Server(httpServer, {
     cors: { origin: env.clientUrl, credentials: true },
   });
+ setIO(io); 
 
   // Runs ONCE per connection, before 'connection' fires. Reject here = never connected.
   io.use(async (socket, next) => {

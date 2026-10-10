@@ -89,7 +89,7 @@ export default function TicketDetailPage() {
         {actionError && <p className="error">{actionError}</p>}
       </div>
 
-      <ChatBox ticketId={id} closed={ticket.status === 'closed'} />
+      <ChatBox ticketId={id} closed={ticket.status === 'closed'} onTicketUpdated={setTicket} />
     </div>
   );
 }

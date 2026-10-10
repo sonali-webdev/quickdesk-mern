@@ -4,6 +4,8 @@ import { Ticket } from '../models/Ticket';
 import { User } from '../models/User';
 import { AppError } from '../utils/AppError';
 import { asyncHandler } from '../utils/asyncHandler';
+import { getIO } from '../sockets/io';
+import { roomFor } from '../sockets/chat.handler';
 import {
   ITicket, TicketDTO, CreateTicketBody, UpdateTicketBody, TicketQuery,
   TICKET_STATUSES, TICKET_PRIORITIES,
@@ -31,7 +33,7 @@ function toDTO(t: HydratedDocument<ITicket>): TicketDTO {
   };
 }
 
-// Shared by getTicket and the socket layer later: can this user see this ticket?
+// Can this user see this ticket? (expects a populated customer)
 export function canAccess(ticket: { customer: unknown }, user: { id: string; role: string }): boolean {
   if (user.role === 'agent') return true;
   const owner = ticket.customer as { id?: string; _id?: { toString(): string } };
@@ -126,6 +128,11 @@ export const updateTicket = asyncHandler(
     }).populate(POPULATE);
     if (!ticket) throw new AppError(404, 'Ticket not found');
 
-    res.json({ ticket: toDTO(ticket) });
+    const dto = toDTO(ticket);
+    // Push the change to everyone who has joined this ticket's room.
+    // `?.` keeps the REST update working even if the socket server isn't up.
+    getIO()?.to(roomFor(dto.id)).emit('ticketUpdated', dto);
+
+    res.json({ ticket: dto });
   }
 );

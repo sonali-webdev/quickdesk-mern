@@ -2,13 +2,20 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Socket } from 'socket.io-client';
 import { createSocket } from '../socket/socket';
 import { getMessagesRequest } from '../api/tickets.api';
-import type { ChatMessage, SocketAck } from '../types';
+import type { ChatMessage, SocketAck, Ticket } from '../types';
 
-export function useTicketChat(ticketId: string) {
+export function useTicketChat(ticketId: string, onTicketUpdated?: (t: Ticket) => void) {
   const socketRef = useRef<Socket | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState('');
+
+  // Keep the latest callback in a ref so the socket effect doesn't have to
+  // re-run (and reconnect) every time the parent re-renders.
+  const updateRef = useRef(onTicketUpdated);
+  useEffect(() => {
+    updateRef.current = onTicketUpdated;
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -38,6 +45,11 @@ export function useTicketChat(ticketId: string) {
       if (msg.ticketId !== ticketId) return;
       // Dedupe by id in case history and a live message overlap
       setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
+    });
+
+    // An agent changed status, priority or assignment
+    socket.on('ticketUpdated', (t: Ticket) => {
+      if (t.id === ticketId) updateRef.current?.(t);
     });
 
     return () => {

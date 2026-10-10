@@ -125,6 +125,7 @@ export interface SocketAck {
 // Events the SERVER emits to clients
 export interface ServerToClientEvents {
   receiveMessage: (message: MessageDTO) => void;
+  ticketUpdated: (ticket: TicketDTO) => void;
 }
 
 // Events the CLIENT emits to the server
