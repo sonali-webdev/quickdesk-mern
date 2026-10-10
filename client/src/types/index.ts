@@ -55,3 +55,5 @@ export interface UpdateTicketInput {
   priority?: TicketPriority;
   assignedAgent?: string | null;
 }
+
+export interface SocketAck { ok: boolean; error?: string; }
