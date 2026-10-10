@@ -62,6 +62,10 @@ export interface JWTPayload {
   role: UserRole;
 }
 
+export interface RegisterBody { name: string; email: string; password: string; }
+export interface LoginBody { email: string; password: string; }
+export interface UserDTO { id: string; name: string; email: string; role: UserRole; }
+export interface AuthResponse { token: string; user: UserDTO; }
 /* ------------------------------------------------------------------ */
 /* Socket.IO typed events                                              */
 /* ------------------------------------------------------------------ */
