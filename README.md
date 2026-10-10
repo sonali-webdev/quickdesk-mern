@@ -10,6 +10,7 @@ A real-time customer support ticketing system. Customers raise support tickets a
   - Agents see all tickets, change status/priority, and assign tickets
 - Ticket list with status and priority filters and pagination
 - Real-time chat per ticket (Socket.IO), with persisted message history
+- Live ticket updates: when an agent changes status or assignment, the customer's page updates without a refresh
 - Chat becomes read-only when a ticket is closed
 - Centralized error handling and request validation
 
@@ -48,6 +49,7 @@ cd quickdesk-mern
 cd server
 npm install
 cp .env.example .env     # on Windows PowerShell: Copy-Item .env.example .env
+                         # on Windows cmd: copy .env.example .env
 ```
 
 Edit `server/.env`:
@@ -69,7 +71,8 @@ In Atlas, add your IP under **Network Access**.
 ```bash
 cd client
 npm install
-cp .env.example .env
+cp .env.example .env     # Windows PowerShell: Copy-Item .env.example .env
+                         # Windows cmd: copy .env.example .env
 ```
 
 `client/.env`:
@@ -107,7 +110,17 @@ npm run dev          # http://localhost:5173
 | PATCH | `/api/tickets/:id` | Agent |
 | GET | `/api/tickets/:id/messages` | Owner or agent |
 
-**Socket.IO events:** `joinTicket`, `leaveTicket`, `sendMessage` (client to server); `receiveMessage` (server to client). The JWT is verified in the connection handshake, and ticket access is re-checked on join and on every send.
+**Socket.IO events**
+
+| Event | Direction | Purpose |
+|---|---|---|
+| `joinTicket` | client to server | Join a ticket's room (access is checked) |
+| `leaveTicket` | client to server | Leave the room |
+| `sendMessage` | client to server | Send a chat message (access is re-checked every time) |
+| `receiveMessage` | server to client | A new chat message in the room |
+| `ticketUpdated` | server to client | The ticket's status, priority or assignment changed |
+
+The JWT is verified in the connection handshake. Ticket access is checked on join and on every send, and `ticketUpdated` is only delivered to sockets that passed the join check.
 
 ## Design Decisions
 
@@ -121,7 +134,7 @@ npm run dev          # http://localhost:5173
 
 I installed and used Code0 (CodeZero) in VS Code while working on this project.
 
-- **Git Tree:** I used it to commit and push. The screenshots commit (`docs: add Code0 screenshots`) was made and pushed from Code0's Git Tree, and later commits were made the same way. Earlier commits were made from the normal VS Code terminal, before I set up Code0.
+- **Git Tree:** I used it to commit and push. The screenshots commit (`docs: add Code0 screenshots`), the README commit and the live-updates commit were made and pushed from Code0's Git Tree. Earlier commits were made from the normal VS Code terminal, before I set up Code0.
 - **Functions and Graph:** I used these to look at how the project is organised. Functions found the Express backend and its 8 routes, and Graph showed the client and server as two separate groups with clear folder dependencies. This matched the structure I had planned.
 - **Screenshots:** they are in [`docs/screenshots/`](docs/screenshots).
 
@@ -162,3 +175,6 @@ I designed the User, Ticket and Message schemas in Mongoose. Passwords are hashe
 
 **5. Component development: live chat in React**
 I built the `useTicketChat` hook and the `ChatBox` component. They load message history over REST, then add live messages from the socket. The socket closes when you leave the page, rejoins the ticket room after a reconnect, and ignores duplicate messages.
+
+**6. Real-time ticket updates**
+While testing, I noticed that when an agent changed a ticket's status or assignment, the customer had to refresh to see it. I fixed it by emitting a `ticketUpdated` event to the ticket's Socket.IO room after a successful update. The client listens for it and updates the page. Only users who passed the room authorization check receive the event. I tested it with a customer window and an agent window side by side.
